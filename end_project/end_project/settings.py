@@ -25,10 +25,10 @@ SECRET_KEY = 'django-insecure-a!x^1+=^ebvwpp*i%mi6=0rv1_sasmc17o@^tpaxrcb2+gal5=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1','endapp.azurewebsites.net']
 
-
-
+LOGIN_REDIRECT_URL = 'index'
+LOGOUT_REDIRECT_URL = 'index'
 # Application definition
 
 INSTALLED_APPS = [
