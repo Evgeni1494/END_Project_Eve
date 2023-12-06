@@ -16,6 +16,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+WSGI_APPLICATION = 'end_project.wsgi.application'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -26,7 +27,7 @@ SECRET_KEY = 'django-insecure-a!x^1+=^ebvwpp*i%mi6=0rv1_sasmc17o@^tpaxrcb2+gal5=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1','endapp.azurewebsites.net']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1','endapp.azurewebsites.net','169.254.130.8']
 
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
@@ -47,7 +48,6 @@ CSRF_TRUSTED_ORIGINS = ['https://endapp.azurewebsites.net']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'opencensus.ext.django.middleware.OpencensusMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,7 +74,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'end_project.wsgi.application'
 
 
 # Database
@@ -156,33 +155,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
+from opentelemetry.instrumentation.django import DjangoInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
+from opentelemetry import trace
+
+# Configuration de l'exportateur Azure Monitor
+trace_exporter = AzureMonitorTraceExporter(
+    connection_string='InstrumentationKey=11f39b82-0464-4a30-8a0f-8315244325e5'
+)
+
+# Configuration du Tracer Provider
+trace_provider = TracerProvider()
+trace_provider.add_span_processor(
+    BatchSpanProcessor(trace_exporter)
+)
+
+# Définir le fournisseur de traceur global
+trace.set_tracer_provider(trace_provider)
+
+# Instrumentation de Django
+DjangoInstrumentor().instrument()
 
 
-OPENCENSUS = {
-    'TRACE': {
-        'SAMPLER': 'opencensus.trace.samplers.ProbabilitySampler(rate=1.0)',
-        'EXPORTER': (
-            'opencensus.ext.azure.trace_exporter.AzureExporter('
-            'connection_string=\'InstrumentationKey=11f39b82-0464-4a30-8a0f-8315244325e5;IngestionEndpoint=https://francecentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://francecentral.livediagnostics.monitor.azure.com/\')'
-        ),
-    }
-}
 
-
-LOGGING = {
-    'version': 1,
-    'handlers': {
-        'azure': {
-            'level': 'INFO',
-            'class': 'opencensus.ext.azure.log_exporter.AzureLogHandler',
-            'connection_string': 'InstrumentationKey=11f39b82-0464-4a30-8a0f-8315244325e5'
-        },
-    },
-    'loggers': {
-        '': {
-            'handlers': ['azure'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}

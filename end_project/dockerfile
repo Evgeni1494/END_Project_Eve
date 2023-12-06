@@ -19,5 +19,5 @@ COPY . /app/
 EXPOSE 8000
 
 # Commande pour démarrer l'application avec Gunicorn
-CMD ["gunicorn", "end_project.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "end_project.wsgi:application", "--timeout=3600","--bind", "0.0.0.0:8000"]
 
