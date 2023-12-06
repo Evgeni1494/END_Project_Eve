@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,9 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'index',
 ]
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = ['https://endapp.azurewebsites.net']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'opencensus.ext.django.middleware.OpencensusMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,6 +86,31 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+import os
+from pathlib import Path
+
+# ... autres configurations ...
+
+# Configuration de la base de données
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': Path(__file__).resolve().parent.parent / 'db.sqlite3',
+    }
+}
+
+# Utiliser PostgreSQL en production
+if os.environ.get('DJANGO_PRODUCTION') == 'true':
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('PGDATABASE', 'postgres'),  # Remplacez par le nom de votre base de données PostgreSQL
+        'USER': os.environ.get('PGUSER', 'evgeni'),  # Votre nom d'utilisateur pour PostgreSQL
+        'PASSWORD': os.environ.get('PGPASSWORD', 'Frosttiger451'),  # Votre mot de passe pour PostgreSQL
+        'HOST': os.environ.get('PGHOST', 'endserver.postgres.database.azure.com'),  # L'hôte de votre base de données PostgreSQL
+        'PORT': os.environ.get('PGPORT', 5432),  # Le port de votre base de données PostgreSQL, 5432 est le port par défaut
+    }
+
 
 
 # Password validation
@@ -123,3 +153,36 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+
+
+OPENCENSUS = {
+    'TRACE': {
+        'SAMPLER': 'opencensus.trace.samplers.ProbabilitySampler(rate=1.0)',
+        'EXPORTER': (
+            'opencensus.ext.azure.trace_exporter.AzureExporter('
+            'connection_string=\'InstrumentationKey=11f39b82-0464-4a30-8a0f-8315244325e5;IngestionEndpoint=https://francecentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://francecentral.livediagnostics.monitor.azure.com/\')'
+        ),
+    }
+}
+
+
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'azure': {
+            'level': 'INFO',
+            'class': 'opencensus.ext.azure.log_exporter.AzureLogHandler',
+            'connection_string': 'InstrumentationKey=11f39b82-0464-4a30-8a0f-8315244325e5'
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['azure'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
